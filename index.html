@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>護理師與病人對話</title>
+    <!-- 載入 Tailwind CSS (用於快速佈局) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Noto Sans TC 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 聊天介面樣式 */
+        body {
+            font-family: "Noto Sans TC", sans-serif;
+            background-color: #f3f5f7;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px; /* 增加寬度 */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15); /* 加強陰影效果 */
+            display: flex;
+            flex-direction: column;
+            height: 90vh; /* 增加高度 */
+            max-height: 900px;
+            min-height: 500px;
+        }
+
+
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background-color: #ffffff; /* 聊天背景改為白色 */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+
+        /* 隱藏滾動條 */
+        #chat-box::-webkit-scrollbar {
+            display: none;
+        }
+        #chat-box {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+
+
+        .message {
+            max-width: 75%; /* 訊息寬度略增 */
+            padding: 12px 18px;
+            border-radius: 24px;
+            line-height: 1.6;
+            position: relative;
+            opacity: 1;
+            white-space: pre-wrap; /* 確保內容換行 */
+            word-break: break-word; /* 避免長單詞溢出 */
+        }
+
+
+        .user .message {
+            align-self: flex-end;
+            background-color: #4f46e5; /* 護理師：靛藍色 */
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+
+        .assistant .message {
+            align-self: flex-start;
+            background-color: #e5e7eb; /* 病人：淺灰色，更貼合醫院環境 */
+            color: #1f2937;
+            border-bottom-left-radius: 6px;
+        }
+
+
+        .message-container {
+            display: flex;
+            align-items: flex-start; /* 頭像在頂部對齊 */
+            gap: 8px;
+        }
+
+
+        .user .message-container {
+            flex-direction: row-reverse;
+            justify-content: flex-start;
+            align-self: flex-end; /* 將整個容器靠右 */
+        }
+       
+        .assistant .message-container {
+            justify-content: flex-start;
+            align-self: flex-start; /* 將整個容器靠左 */
+        }
+
+
+        /* 將 send button樣式對應到 #send-button */
+        #send-button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            background-color: #4f46e5;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 700;
+        }
+
+
+        #send-button:hover:not(:disabled) {
+            background-color: #3730a3;
+        }
+
+
+        #send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 1em;
+            resize: none; /* 防止使用者拖拉 textarea 大小 */
+            min-height: 48px;
+            max-height: 200px;
+        }
+
+
+        /* 頭像 */
+        .avatar {
+            font-size: 1.5em;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 50%;
+            background-color: #f3f4f6;
+        }
+       
+        .user .avatar {
+            color: #4f46e5; /* 護理師頭像顏色 */
+        }
+
+
+        .assistant .avatar {
+            color: #71717a; /* 病人頭像顏色 */
+        }
+
+
+        /* 新增的清除按鈕樣式 */
+        #clearChatBtn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+
+
+        #clearChatBtn:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+
+
+        /* 情境框樣式 */
+        #scenarioBox {
+            background-color: #eff6ff; /* 淺藍色背景 */
+            border: 1px solid #93c5fd; /* 藍色邊框 */
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #1e40af; /* 深藍色文字 */
+        }
+       
+        /* Loading 指示器 */
+        .dot-pulse {
+            position: relative;
+            left: -9999px;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #4f46e5;
+            color: #4f46e5;
+            box-shadow: 9999px 0 0 -5px #4f46e5;
+            animation: dotPulse 1.5s infinite linear;
+            animation-delay: 0.25s;
+        }
+
+
+        .dot-pulse::before, .dot-pulse::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #4f46e5;
+            color: #4f46e5;
+        }
+
+
+        .dot-pulse::before {
+            box-shadow: 9984px 0 0 -5px #4f46e5;
+            animation: dotPulseBefore 1.5s infinite linear;
+            animation-delay: 0s;
+        }
+
+
+        .dot-pulse::after {
+            box-shadow: 10014px 0 0 -5px #4f46e5;
+            animation: dotPulseAfter 1.5s infinite linear;
+            animation-delay: 0.5s;
+        }
+
+
+        @keyframes dotPulseBefore {
+            0% { box-shadow: 9984px 0 0 -5px #4f46e5; }
+            30% { box-shadow: 9984px 0 0 2px #4f46e5; }
+            60%, 100% { box-shadow: 9984px 0 0 -5px #4f46e5; }
+        }
+
+
+        @keyframes dotPulse {
+            0% { box-shadow: 9999px 0 0 -5px #4f46e5; }
+            30% { box-shadow: 9999px 0 0 2px #4f46e5; }
+            60%, 100% { box-shadow: 9999px 0 0 -5px #4f46e5; }
+        }
+
+
+        @keyframes dotPulseAfter {
+            0% { box-shadow: 10014px 0 0 -5px #4f46e5; }
+            30% { box-shadow: 10014px 0 0 2px #4f46e5; }
+            60%, 100% { box-shadow: 10014px 0 0 -5px #4f46e5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="chat-container">
+        <!-- 標題區域，包含清除按鈕 -->
+        <header class="p-4 bg-indigo-700 text-white rounded-t-lg shadow-xl mb-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">護理師與病人對話模擬</h1>
+            <button id="clearChatBtn" title="清除對話紀錄並重置對話框" class="text-sm">清除對話</button>
+        </header>
+
+
+        <!-- 情境框 -->
+        <div id="scenarioBox">
+            <!-- 內容由 JavaScript 載入 -->
+        </div>
+
+
+        <div id="chat-box">
+            <!-- 初始歡迎訊息將由 JavaScript 動態載入 -->
+        </div>
+
+
+        <footer class="input-area border-t border-gray-200 pt-4 flex-col gap-2">
+            <form id="chat-form" class="flex flex-grow space-x-3 w-full">
+                <!-- 將 input 改為 textarea 讓用戶輸入更多內容 -->
+                <textarea id="user-input" placeholder="請觀察病人的語言及非語言，提供相對應的評估及回應... (按 Enter 傳送)"
+                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                    rows="1" required autocomplete="off" oninput="autoResize(this)"></textarea>
+                <button type="submit" id="send-button"
+                    class="shadow-lg transition duration-200 disabled:opacity-50"
+                    title="傳送訊息">
+                    傳送
+                </button>
+            </form>
+            <div class="flex justify-between items-center w-full min-h-[24px]">
+                <!-- Loading Indicator and Status -->
+                <div id="loading-indicator" class="hidden flex items-center space-x-2 text-sm text-gray-500">
+                    <div class="dot-pulse"></div>
+                    <span>病人正在思考...</span>
+                </div>
+                <!-- 匹配分數結果置於對話框外，不影響訊息輸入框 -->
+                <div id="mock-status" class="hidden text-center text-xs p-1 px-2 rounded-full ml-auto font-medium"></div>
+            </div>
+        </footer>
+    </div>
+
+
+    <script>
+        // 自動調整輸入框高度
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
+
+        // ------------------- 🔹 模擬後端邏輯與設定 🔹 -------------------
+        const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
+       
+        // 🚨 在 Canvas 環境中，API Key 留空，系統會自動提供
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+
+
+        // 系統指令：用於引導 AI 模型的行為
+        const SYSTEM_PROMPT = "你是一位精神科病人，表現出輕微的焦慮與偏執傾向。護理師的每一句輸入都是對你的提問或介入。你的回應要表現出困惑、輕微的偏執、焦慮或簡短的迴避。你的回答必須簡潔，並維持角色一致性。例如：'你在說什麼？'，'這跟那個東西有關嗎？'，或只是簡短地回答問題並帶出你的妄想。";
+
+
+        const INITIAL_SCENARIO = `
+            <strong>情境描述：</strong><br>
+            您是精神科病房的護理師。病人目前被診斷為有精神分裂症狀，表現出輕微的焦慮與偏執傾向。請您開始一小段護理對話，以評估病人的狀態並建立治療性關係。
+        `;
+        const INITIAL_WELCOME_MESSAGE = '（焦慮地環顧四周）你... 你是誰？你想對我做什麼？';
+
+
+        // 內嵌 Mock 數據，所有權重皆為 1
+        // 關鍵字越精準，越容易達到 3 分觸發高確定性回應
+        let MOCK_RESPONSES = [
+            // 分數 3: 高確定性回應
+            { keywords: [{ word: "運動", weight: 1 }, { word: "早上", weight: 1 }, { word: "忙", weight: 1 }], reply: "運動？是...是他們在監視我嗎？我的肌肉裡有東西。你逼我動是要讓我被抓到嗎？" },
+            { keywords: [{ word: "心情不好", weight: 1 }, { word: "不想做", weight: 1 }, { word: "情緒", weight: 1 }], reply: "什麼感受？你是說...我被操控的情緒？別假裝你懂，你們都在記錄我的反應！" },
+            { keywords: [{ word: "午餐", weight: 1 }, { word: "選擇", weight: 1 }, { word: "健康", weight: 1 }], reply: "食物...這裡的食物都有毒，我不要吃，別逼我！" },
+            { keywords: [{ word: "睡眠", weight: 1 }, { word: "晚上", weight: 1 }, { word: "不足", weight: 1 }], reply: "晚上...我一閉眼，那些聲音就來了，你叫我怎麼睡？他們在透過牆壁對我說話！" },
+            { keywords: [{ word: "藥物", weight: 1 }, { word: "吃了", weight: 1 }, { word: "藍色", weight: 1 } ], reply: "對，我吃了。那顆藍色的小藥丸，他們說可以幫我趕走那些聲音，但只是讓我的腦袋變慢而已。" },
+            { keywords: [{ word: "焦慮", weight: 1 }, { word: "不安", weight: 1 }, { word: "害怕", weight: 1 } ], reply: "（搓著手，視線迴避）你問我害不害怕？當然，到處都是陷阱，你才是最危險的那個！" },
+{ keywords: [{ word: "單張", weight: 1 }, { word: "入院", weight: 1 }, { word: "新病人", weight: 1 }, { word: "護理", weight: 1 } ], reply: "你要準備的是..." },
+
+           
+            // 分數 2: 中等確定性，病人表現出困惑
+            { keywords: [{ word: "你好", weight: 1 }, { word: "感覺", weight: 1 }], reply: "我... 我還好，護理師。你覺得我看起來還好嗎？（懷疑地看著你）" },
+            { keywords: [{ word: "休息", weight: 1 }, { word: "放鬆", weight: 1 }], reply: "放鬆？我隨時都必須保持警覺，你叫我怎麼放鬆？你是不是想讓我睡著好對我動手腳？" },
+            { keywords: [{ word: "今天", weight: 1 }, { word: "活動", weight: 1 }], reply: "活動... 是指那些集體活動嗎？我不想去，那裡人太多了，他們會看穿我。" },
+           
+            // 分數 1: 低確定性，通常是單一詞彙被觸發，病人表現出迴避
+            { keywords: [{ word: "離開", weight: 1 }], reply: "（低頭，沉默不語...）" },
+            { keywords: [{ word: "家", weight: 1 }], reply: "（看向窗外，表現出厭惡）" },
+            { keywords: [{ word: "幫助", weight: 1 }], reply: "（自言自語，沒有理會你的話...）" }
+        ];
+
+
+        // 計算匹配分數
+        function calculateMatchScore(mock, userMessage) {
+            let score = 0;
+            const normalizedMessage = userMessage.toLowerCase().replace(/\s/g, ''); // 移除空格再比較
+           
+            mock.keywords.forEach(kw => {
+                // 使用 indexOf 檢查是否包含關鍵字
+                if (normalizedMessage.includes(kw.word.toLowerCase().replace(/\s/g, ''))) {
+                    score += kw.weight || 1; // 確保使用 weight 或預設 1
+                }
+            });
+            return score;
+        }
+
+
+        // 提取關鍵字 (用於動態學習時創建新的 Mock)
+        function extractKeywords(text) {
+            // 分詞邏輯：移除標點符號，切分後只取長度 >= 2 的詞彙
+            return text
+                .replace(/[.,!?，。！？\n]/g, " ")
+                .split(/\s+/)
+                .filter(word => word.length >= 2)
+                .map(word => ({ word, weight: 1 })); // 動態學習的關鍵字權重也為 1
+        }
+
+
+        // ------------------- 🔹 前端 DOM 與互動邏輯 🔹 -------------------
+const chatForm = document.getElementById('chat-form');
+const userInput = document.getElementById('user-input');
+const chatBox = document.getElementById('chat-box');
+const sendButton = document.getElementById('send-button'); // 確保 ID 正確
+const loadingIndicator = document.getElementById('loading-indicator');
+const mockStatus = document.getElementById('mock-status');
+const scenarioBox = document.getElementById('scenarioBox');
+const clearChatBtn = document.getElementById('clearChatBtn');
+
+
+        function appendMessage(sender, text, score) {
+            const isUser = sender === 'user';
+           
+            const messageContainer = document.createElement('div');
+            // 使用 align-self 控制整條訊息的對齊
+            messageContainer.className = `message-container ${isUser ? 'user' : 'assistant'} ${isUser ? 'self-end' : 'self-start'} w-full`;
+
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar text-2xl';
+            avatar.textContent = isUser ? '👩‍⚕️' : '👤'; // 護理師頭像 vs 病人頭像
+
+
+            const bubble = document.createElement('div');
+            bubble.className = `message shadow-md`;
+            bubble.textContent = text;
+           
+            if (isUser) {
+                messageContainer.appendChild(bubble);
+                messageContainer.appendChild(avatar);
+            } else {
+                messageContainer.appendChild(avatar);
+                messageContainer.appendChild(bubble);
+            }
+           
+            chatBox.appendChild(messageContainer);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+
+        function updateStatus(score, mockUsed) {
+            mockStatus.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-yellow-100', 'text-yellow-700');
+           
+            let statusText = `匹配分數: ${score} - `;
+            let statusClass ='';
+
+
+            if (mockUsed) {
+                if (score >= 3) {
+                    statusText += '高確定性匹配 (Mock)';
+                    statusClass = 'bg-green-100 text-green-700';
+                } else {
+                    statusText += '低/中度匹配 (Mock 觸發)';
+                    statusClass = 'bg-yellow-100 text-yellow-700';
+                }
+            } else { // score = 0, using AI
+                statusText += '無匹配 (使用 Gemini AI)';
+                statusClass = 'bg-red-100 text-red-700';
+            }
+
+
+            mockStatus.textContent = statusText;
+            mockStatus.classList.add(statusClass);
+            mockStatus.classList.remove('hidden');
+        }
+
+
+        async function handleChat(userMessage) {
+            // 1. 找匹配分數最高 mock
+            let bestMock = null;
+            let highestScore = 0;
+
+
+            MOCK_RESPONSES.forEach(m => {
+                const score = calculateMatchScore(m, userMessage);
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestMock = m;
+                }
+            });
+
+
+            let responseData = {
+                reply: "",
+                score: highestScore,
+                mockUsed: false,
+            };
+
+
+            // 2. 實作 Mock 邏輯
+            if (highestScore >= 3 && bestMock) {
+                // 關鍵字大於或等於 3 分時，使用 Mock 優先回應 (高確定性)
+                responseData.reply = bestMock.reply;
+                responseData.mockUsed = true;
+                return responseData;
+            } else if (highestScore === 2) {
+                // 關鍵字匹配 2 分時，給予困惑回應
+                responseData.reply = "你...你是在暗示什麼嗎？我聽不懂。你到底想從我這裡得到什麼？";
+                responseData.mockUsed = true;
+                return responseData;
+            } else if (highestScore === 1) {
+                // 關鍵字符合 1 分時，隨機回應迴避行為
+                const lowScoreReplies = [
+                    "（低頭，沉默不語...）",
+                    "（焦慮地環顧四周，沒有理會你...）",
+                    "（突然看向窗外，說：『你看，那些鳥是不是在排隊？』）"
+                ];
+                const randomIndex = Math.floor(Math.random() * lowScoreReplies.length);
+                responseData.reply = lowScoreReplies[randomIndex];
+                responseData.mockUsed = true;
+                return responseData;
+            }
+
+
+            // 3. 無匹配 (highestScore = 0) - 呼叫 Gemini API
+            try {
+                // 為了讓 AI 能維持病人角色，將系統提示放在這裡
+                const payload = {
+                    contents: [
+                        { role: "user", parts: [{ text: userMessage }] },
+                    ],
+                    // 使用 systemInstruction 確保角色一致性
+                    systemInstruction: {
+                        parts: [{ text: SYSTEM_PROMPT }]
+                    },
+                };
+
+
+                // 使用 fetch 呼叫 Gemini API (使用指數退避策略)
+                const MAX_RETRIES = 3;
+                let attempt = 0;
+                let apiResponse;
+
+
+                while (attempt < MAX_RETRIES) {
+                    try {
+                        apiResponse = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+
+                        if (apiResponse.ok) break; // 成功則跳出迴圈
+                       
+                        // 對於 5xx 或 429 錯誤，進行重試
+                        if (apiResponse.status >= 500 || apiResponse.status === 429) {
+                            throw new Error('Retriable API error');
+                        } else {
+                            // 其他非重試錯誤，直接拋出
+                            throw new Error(`API error: ${apiResponse.status} ${apiResponse.statusText}`);
+                        }
+
+
+                    } catch (e) {
+                        attempt++;
+                        if (attempt >= MAX_RETRIES) throw e;
+                        const delay = Math.pow(2, attempt) * 1000; // 指數退避: 2s, 4s, 8s...
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+               
+                if (!apiResponse || !apiResponse.ok) {
+                    throw new Error("Failed to get response after multiple retries.");
+                }
+
+
+                const result = await apiResponse.json();
+                const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || "（沉默...）";
+
+
+                responseData.reply = generatedText;
+
+
+                // 動態學習加入 mock (不持久化)
+                const newKeywords = extractKeywords(userMessage);
+                if (newKeywords.length >= 2 && generatedText !== "（沉默...）" && generatedText.length > 5) {
+                    const isDuplicate = MOCK_RESPONSES.some(m => m.reply === responseData.reply);
+                    if (!isDuplicate) {
+                        // 新增的 mock 權重為 1
+                        MOCK_RESPONSES.push({ keywords: newKeywords, reply: responseData.reply, weight: 1 });
+                    }
+                }
+
+
+                return responseData;
+            } catch (error) {
+                console.error("Gemini API 錯誤或網路錯誤:", error);
+                // 錯誤回覆（符合病人角色）
+                responseData.reply = "（焦慮地環顧四周，躲到角落）是不是有人在聽？這裡不能說，我什麼都不知道！";
+                return responseData;
+            }
+        }
+
+
+        // ------------------- 🔹 聊天初始化與重置 🔹 -------------------
+       
+        function displayScenario() {
+            scenarioBox.innerHTML = INITIAL_SCENARIO;
+        }
+
+
+        function initChat() {
+            chatBox.innerHTML = ''; // 清空聊天紀錄
+            mockStatus.classList.add('hidden'); // 隱藏狀態
+            displayScenario(); // 顯示情境框
+           
+            // 插入病人的初始歡迎訊息
+            setTimeout(() => {
+                appendMessage('ai', INITIAL_WELCOME_MESSAGE, null);
+            }, 500);
+        }
+
+
+        function clearChat() {
+            // 重置整個聊天介面
+            initChat();
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            // 可選：如果需要重置 MOCK_RESPONSES 則在這裡操作
+        }
+
+
+        // 處理表單提交
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = userInput.value.trim();
+
+    if (!message) return;
+
+    // 1. 顯示使用者訊息
+    appendMessage('user', message);
+    userInput.value = '';
+    userInput.style.height = 'auto'; // 重置輸入框高度
+
+    // 2. 鎖定輸入並顯示 Loading
+    sendButton.disabled = true;
+    loadingIndicator.classList.remove('hidden');
+
+    let responseData = { reply: '（錯誤：無法獲取回覆。）', score: 0, mockUsed: false };
+    
+    try {
+        // 3. 處理聊天邏輯 (Mock 或 AI)。
+        // handleChat 內部會處理所有 API 錯誤並返回一個結果。
+        responseData = await handleChat(message);
+
+        // 4. 顯示病人的回覆與狀態
+        appendMessage('ai', responseData.reply, responseData.score);
+        updateStatus(responseData.score, responseData.mockUsed);
+
+    } catch (error) {
+        // 僅捕捉極端意外（例如變數未定義、執行時錯誤），並輸出到控制台。
+        console.error("表單提交發生未預期、高層級的同步錯誤:", error);
+        // 如果連 responseData 都沒有成功賦值，則顯示預設錯誤
+        if (!responseData.reply) {
+            appendMessage('ai', '（致命的程式碼錯誤，請檢查控制台。）', 0);
+        }
+    } finally {
+        // 5. 確保解鎖輸入 (不論成功或失敗，此區塊一定會執行)
+        sendButton.disabled = false;
+        loadingIndicator.classList.add('hidden');
+    }
+});
+
+// 監聽 Enter 鍵（非 Shift+Enter）
+userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); // 阻止換行
+        chatForm.dispatchEvent(new Event('submit'));
+    }
+});
+
+
+        // 綁定清除按鈕
+        clearChatBtn.addEventListener('click', clearChat);
+
+
+        // 頁面載入後立即初始化
+        window.onload = initChat;
+    </script>
+</body>
+</html>
+
+
