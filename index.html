@@ -344,7 +344,8 @@
             { keywords: [{ word: "焦慮", weight: 1 }, { word: "不安", weight: 1 }, { word: "害怕", weight: 1 } ], reply: "（搓著手，視線迴避）你問我害不害怕？當然，到處都是陷阱，你才是最危險的那個！" },
             { keywords: [{ word: "入院", weight: 1 }, { word: "新病人", weight: 1 }, { word: "護理", weight: 1 } ], reply: "跟急診交班了嗎？..." },
             { keywords: [{ word: "急診", weight: 1 }, { word: "完成", weight: 1 }, { word: "交班", weight: 1 }, { word: "結束", weight: 1 } ], reply: "想確認收新病人需準備的用物嗎？..." },
-            { keywords: [{ word: "確認", weight: 1 }, { word: "用物", weight: 1 }, { word: "準備", weight: 1 }, { word: "新病人", weight: 1 } , { word: "收", weight: 1 } , { word: "N'pt", weight: 1 } ], reply: "你要準備的用物有：1.新病人病歷、床頭牌資料、診斷牌、手圈..." },
+            { keywords: [{ word: "確認", weight: 1 }, { word: "用物", weight: 1 }, { word: "準備", weight: 1 }, { word: "新病人", weight: 1 } , { word: "收", weight: 1 } , { word: "N'pt", weight: 1 } ], reply: "請確認要準備的用物有：1.新病人病歷、2.床頭牌資料、3.診斷牌、4.手圈...，請務必於交班完成30分鐘內，通知新病人入病室。我還可以提醒你病人入病室後的作業流程，如果需要，請告訴我＂新病人入病室後作業流程＂..." },
+             { keywords: [{ word: "新病人", weight: 1 }, { word: "病室", weight: 1 }, { word: "作業流程", weight: 1 } ], reply: "病人入病室時請與急診點交：1.病人貴重物品/危進物品、2.安檢、3.確認有無自備藥物（若是服藥時間請確認當餐藥物）、4.身高體重、5.跌倒評估..." },
            
             // 分數 2: 中等確定性，病人表現出困惑
             { keywords: [{ word: "你好", weight: 1 }, { word: "感覺", weight: 1 }], reply: "我... 我還好，護理師。你覺得我看起來還好嗎？（懷疑地看著你）" },
@@ -667,6 +668,7 @@ userInput.addEventListener('keydown', (e) => {
     </script>
 </body>
 </html>
+
 
 
 
